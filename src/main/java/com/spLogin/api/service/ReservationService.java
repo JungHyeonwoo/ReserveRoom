@@ -38,7 +38,7 @@ public class ReservationService {
   public MeetingRoomResponse meetingRoomToMeetingRoomResponse (MeetingRoom meetingRoom) {
     return new MeetingRoomResponse(
         meetingRoom.getId(),
-        meetingRoom.getName(),
+        meetingRoom.getName(), // 주석 추가
         isUsingMeetingRoomNow(meetingRoom) ? Status.RESERVED : Status.EMPTY,
         meetingRoom.getMaxPeople(),
         meetingRoom.getLocation()
