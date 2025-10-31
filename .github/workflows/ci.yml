@@ -1,0 +1,51 @@
+name: Project CI with QuantumLeap
+
+on:
+  pull_request:
+    branches: [ main ] # 또는 대상 프로젝트의 기본 브랜치 이름
+
+jobs:
+  optimized-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 1. Checkout Target Project Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 #
+
+      - name: 2. Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'gradle'
+
+      - name: 3. Download QuantumLeap Analyzer
+        run: |
+          wget https://github.com/JungHyeonwoo/PBL/releases/download/untagged-dcd17bfffa896d227574/QuantumLeap-1.0.jar -O quantumleap.jar
+
+      - name: 4. Run QuantumLeap Analyzer
+        id: analyze
+        run: |
+          TESTS_TO_RUN=$(java -jar quantumleap.jar . \
+            --base ${{ github.event.before }} \
+            --head ${{ github.event.after }})
+
+          # 결과를 다음 단계에서 사용할 수 있도록 GitHub Actions 출력 변수로 설정
+          echo "tests_to_run<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$TESTS_TO_RUN" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+      - name: 5. Display Selected Tests (For Verification)
+        run: |
+          echo "QuantumLeap가 선별한 테스트 목록:"
+          echo "${{ steps.analyze.outputs.tests_to_run }}"
+          # TODO: 10주차에 실제 테스트 실행 로직으로 변경 예정
+
+      # --- 10주차 작업 예정 ---
+      # - name: 5. Run Selected Tests
+      #   if: steps.analyze.outputs.tests_string != ''
+      #   run: ./gradlew test ${{ steps.analyze.outputs.tests_string }}
+      # - name: 6. Run All Tests (Fallback)
+      #   if: steps.analyze.outputs.tests_string == ''
+      #   run: ./gradlew test
