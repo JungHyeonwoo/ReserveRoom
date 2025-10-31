@@ -40,7 +40,7 @@ public class ReservationService {
         meetingRoom.getId(),
         meetingRoom.getName(), // 주석 추가
         isUsingMeetingRoomNow(meetingRoom) ? Status.RESERVED : Status.EMPTY,
-        meetingRoom.getMaxPeople(),
+        meetingRoom.getMaxPeople(), // CI Test
         meetingRoom.getLocation()
     );
   }
