@@ -40,29 +40,24 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         .csrf().disable()
         .httpBasic().disable()
         .exceptionHandling()
-        .authenticationEntryPoint(jwtAuthenticationEntryPoint)
-        .accessDeniedHandler(jwtAccessDeniedHandler)
-        .and()
-        .sessionManagement()
-        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+//        .authenticationEntryPoint(jwtAuthenticationEntryPoint)
+//        .accessDeniedHandler(jwtAccessDeniedHandler)
+//        .and()
+//        .sessionManagement()
+//        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
         .and()
         .authorizeRequests()
-        .antMatchers("/v1/user/**"
-            , "/api/application/latest"
-            , "/swagger-resources/**"
-            , "/swagger-ui/**"
-            , "/deviceconn/renewAdb"
-            , "/api/mobiles/checkDevice"
-            , "/api/mobiles/sync"
-            , "/api/mobiles/connect/**"
-            , "/api/mobiles/update-connection"
-            , "/devices/renewAdb"
-            , "/api/server/**"
-            , "/api/certifications/**"
-            , "/api/alarms/**"
-            , "/v3/api-docs").permitAll()
+        .antMatchers(
+            "/v1/user/**",
+            "/api/application/latest",
+            "/swagger-resources/**",
+            "/swagger-ui/**",
+            "/v3/api-docs/**",
+            "/webjars/**",
+            "/swagger-ui.html")
+        .permitAll()
         .antMatchers(HttpMethod.GET, "/api/products").permitAll()
-        .anyRequest().authenticated()
+//        .anyRequest().authenticated()
         .and()
         .apply(new JwtSecurityConfig(jwtTokenProvider,stringRedisTemplate));
   }

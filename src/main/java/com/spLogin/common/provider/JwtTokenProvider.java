@@ -1,5 +1,6 @@
 package com.spLogin.common.provider;
 
+import com.spLogin.api.repository.MemberRepository;
 import com.spLogin.common.exception.CustomException;
 import com.spLogin.common.exception.ErrorCode;
 import com.spLogin.common.dto.TokenDTO;
@@ -22,6 +23,7 @@ import java.util.stream.Collectors;
 
 @Component
 @Slf4j
+
 public class JwtTokenProvider {
 
   // Access Token 만료 시간 : 1시간
@@ -32,7 +34,11 @@ public class JwtTokenProvider {
   private static final String AUTHORITIES_KEY = "auth";
   private final Key key;
 
-  public JwtTokenProvider(@Value("${spring.jwt.secret}") String secretKey) {
+  private final MemberRepository memberRepository;
+
+  public JwtTokenProvider(@Value("${spring.jwt.secret}") String secretKey,
+      MemberRepository memberRepository) {
+    this.memberRepository = memberRepository;
     byte[] keyBytes = Decoders.BASE64.decode(secretKey);
     this.key = Keys.hmacShaKeyFor(keyBytes);
   }
@@ -65,6 +71,8 @@ public class JwtTokenProvider {
         .accessTokenExpiresIn(accessTokenExpiresIn.getTime())
         .refreshToken(refreshToken)
         .refreshTokenExpiresIn(refreshTokenExpiresIn.getTime())
+        .memberId(memberRepository.findUserByEmail(authentication.getName()).get()
+            .getId())
         .build();
   }
 

@@ -9,6 +9,7 @@ public class CustomExceptionHandler {
 
   @ExceptionHandler({CustomException.class})
   protected ResponseEntity<ErrorResponseEntity> handleCustomException(CustomException e) {
+    e.printStackTrace();
     return ErrorResponseEntity.toResponseEntity(e.getErrorCode());
   }
 

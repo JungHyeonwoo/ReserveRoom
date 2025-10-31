@@ -6,6 +6,7 @@ import com.spLogin.api.domain.request.RegisterRequest;
 import com.spLogin.common.entity.BaseEntity;
 import com.spLogin.common.enumerate.Role;
 import java.io.Serializable;
+import java.util.List;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
@@ -13,6 +14,7 @@ import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.OneToMany;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -39,6 +41,13 @@ public class Member extends BaseEntity implements Serializable {
   private Role role;
   @Column(name = "is_deleted")
   private boolean isDeleted;
+
+  private String provider;
+
+  private String providerId;
+
+  @OneToMany(mappedBy = "member", orphanRemoval = true, cascade = javax.persistence.CascadeType.ALL)
+  private List<Reservation> reservations;
 
 
   public boolean isPasswordMatch(PasswordEncoder passwordEncoder, String password) {

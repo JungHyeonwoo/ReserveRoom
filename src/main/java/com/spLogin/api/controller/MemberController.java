@@ -4,6 +4,7 @@ import com.spLogin.api.domain.request.LoginRequest;
 import com.spLogin.api.domain.request.RegisterRequest;
 import com.spLogin.api.domain.response.UserResponse;
 import com.spLogin.api.service.MemberService;
+import com.spLogin.common.dto.TokenDTO;
 import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -20,13 +21,13 @@ public class MemberController {
 
   private final MemberService userService;
 
-  @PostMapping("/singup")
-  public UserResponse singup(@RequestBody @Valid RegisterRequest registerRequest) {
+  @PostMapping("/sing/up")
+  public UserResponse singUp(@RequestBody @Valid RegisterRequest registerRequest) {
     return userService.register(registerRequest);
   }
 
   @PostMapping("/login")
-  public ResponseEntity<?> login(@RequestBody @Valid LoginRequest loginRequest) {
-    return new ResponseEntity<>(userService.login(loginRequest), HttpStatus.OK);
+  public TokenDTO login(@RequestBody @Valid LoginRequest loginRequest) {
+    return userService.login(loginRequest);
   }
 }

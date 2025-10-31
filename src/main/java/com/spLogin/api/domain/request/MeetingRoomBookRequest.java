@@ -19,4 +19,6 @@ public class MeetingRoomBookRequest {
   @DateTimeFormat(iso = ISO.DATE_TIME)
   private LocalDateTime meetingEndDateTime;
 
+  private Long memberId;
+
 }
