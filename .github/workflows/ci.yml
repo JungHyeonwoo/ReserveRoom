@@ -2,7 +2,7 @@ name: Project CI with QuantumLeap
 
 on:
   pull_request:
-    branches: [ main ] # 또는 대상 프로젝트의 기본 브랜치 이름
+    branches: [ main ]
 
 jobs:
   optimized-test:
@@ -22,7 +22,7 @@ jobs:
 
       - name: 3. Download QuantumLeap Analyzer
         run: |
-          wget https://github.com/JungHyeonwoo/PBL/releases/download/untagged-dcd17bfffa896d227574/QuantumLeap-1.0.jar -O quantumleap.jar
+          wget https://github.com/JungHyeonwoo/PBL/releases/download/v1.0.0/QuantumLeap-1.0.jar -O quantumleap.jar
 
       - name: 4. Run QuantumLeap Analyzer
         id: analyze
