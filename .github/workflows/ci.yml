@@ -40,7 +40,6 @@ jobs:
           java -jar quantumleap.jar . \
             --base ${{ github.event.before }} \
             --head ${{ github.event.after }} \
-            --projectRoot 
             > "$STDOUT_FILE" 2> >(tee "$STDERR_FILE" >&2) || true
           
           TESTS_TO_RUN=$(cat "$STDOUT_FILE")
