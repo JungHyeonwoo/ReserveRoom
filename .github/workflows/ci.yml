@@ -47,9 +47,6 @@ jobs:
           
           rm "$STDOUT_FILE" "$STDERR_FILE"
 
-          TESTS_TO_RUN=$(echo "${ANALYSIS_LOG}" | grep -v "🚀" | grep -v "ℹ️" | grep -v "✅" | grep -v "⚠️" | grep -v "===" | grep -v "분석")
-          ANALYSIS_LOG_CLEAN=$(echo "${ANALYSIS_LOG}" | grep -E "🚀|ℹ️|✅|⚠️|===|분석")
-
           # 여러 줄의 테스트 목록을 Gradle --tests 옵션 형식의 한 줄 문자열로 변환합니다.
           TESTS_STRING=$(echo "$TESTS_TO_RUN" | awk '{printf "--tests \\"%s\\" ", $0}' | sed 's/ $//')
 
