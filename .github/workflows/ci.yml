@@ -28,7 +28,7 @@ jobs:
       # 분석기 jar 파일 다운로드
       - name: 3. Download QuantumLeap Analyzer
         run: |
-          wget https://github.com/JungHyeonwoo/PBL/releases/download/v1.0.1/QuantumLeap-1.0.jar -O quantumleap.jar
+          wget https://github.com/JungHyeonwoo/PBL/releases/download/v1.0.1/QuantumLeap-1.0.1.jar -O quantumleap.jar
 
       # 분석기 실행 및 결과 캡처
       - name: 4. Run QuantumLeap Analyzer
