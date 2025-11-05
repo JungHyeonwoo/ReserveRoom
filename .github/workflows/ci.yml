@@ -35,11 +35,18 @@ jobs:
       - name: 4. Run QuantumLeap Analyzer
         id: analyze
         run: |
-          exec 3>&1
-          ANALYSIS_LOG=$( { java -jar quantumleap.jar . \
+          STDOUT_FILE=$(mktemp)
+          STDERR_FILE=$(mktemp)
+          
+          java -jar quantumleap.jar . \
             --base ${{ github.event.before }} \
-            --head ${{ github.event.after }} 1>&3 2>&1; } | tee /dev/stderr ) || true
-          exec 3>&-
+            --head ${{ github.event.after }} \
+            > "$STDOUT_FILE" 2> >(tee "$STDERR_FILE" >&2)
+          
+          TESTS_TO_RUN=$(cat "$STDOUT_FILE")
+          ANALYSIS_LOG_CLEAN=$(cat "$STDERR_FILE")
+          
+          rm "$STDOUT_FILE" "$STDERR_FILE"
 
           TESTS_TO_RUN=$(echo "${ANALYSIS_LOG}" | grep -v "🚀" | grep -v "ℹ️" | grep -v "✅" | grep -v "⚠️" | grep -v "===" | grep -v "분석")
           ANALYSIS_LOG_CLEAN=$(echo "${ANALYSIS_LOG}" | grep -E "🚀|ℹ️|✅|⚠️|===|분석")
