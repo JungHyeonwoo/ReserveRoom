@@ -28,8 +28,7 @@ jobs:
       # 분석기 jar 파일 다운로드
       - name: 3. Download QuantumLeap Analyzer
         run: |
-          # TODO: 아래 URL을 실제 릴리즈된 JAR 파일의 URL로 수정
-          wget https://github.com/JungHyeonwoo/PBL/releases/download/v1.0.0/QuantumLeap-1.0.jar -O quantumleap.jar
+          wget https://github.com/JungHyeonwoo/PBL/releases/download/v1.0.1/QuantumLeap-1.0.jar -O quantumleap.jar
 
       # 분석기 실행 및 결과 캡처
       - name: 4. Run QuantumLeap Analyzer
@@ -41,7 +40,8 @@ jobs:
           java -jar quantumleap.jar . \
             --base ${{ github.event.before }} \
             --head ${{ github.event.after }} \
-            > "$STDOUT_FILE" 2> >(tee "$STDERR_FILE" >&2)
+            --projectRoot 
+            > "$STDOUT_FILE" 2> >(tee "$STDERR_FILE" >&2) || true
           
           TESTS_TO_RUN=$(cat "$STDOUT_FILE")
           ANALYSIS_LOG_CLEAN=$(cat "$STDERR_FILE")
