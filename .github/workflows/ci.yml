@@ -4,6 +4,10 @@ on:
   pull_request:
     branches: [ main ]
 
+# Github Actions Comment를 위한 권한 설정 추가(2025-11-05)
+permissions:
+  pull-requests: write
+
 jobs:
   optimized-test:
     runs-on: ubuntu-latest
@@ -11,8 +15,9 @@ jobs:
       - name: 1. Checkout Target Project Code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 #
+          fetch-depth: 0 # Git 변경점 분석 위한 전체 히스토리 로드
 
+      # 개발 환경 설정
       - name: 2. Set up JDK 17
         uses: actions/setup-java@v4
         with:
@@ -20,32 +25,90 @@ jobs:
           distribution: 'temurin'
           cache: 'gradle'
 
+      # 분석기 jar 파일 다운로드
       - name: 3. Download QuantumLeap Analyzer
         run: |
-          wget https://github.com/JungHyeonwoo/PBL/releases/download/v1.0.0/QuantumLeap-1.0.jar -O quantumleap.jar
+          # TODO: 아래 URL을 실제 릴리즈된 JAR 파일의 URL로 수정
+          wget https://github.com/JungHyeonwoo/PBL/releases/download/v0.1.0/QuantumLeap-0.0.1-SNAPSHOT.jar -O quantumleap.jar
 
+      # 분석기 실행 및 결과 캡처
+      # 표준 에러(로그)는 ANALYSIS_LOG 변수에, 표준 출력(테스트 목록)은 TESTS_TO_RUN 변수에 저장합니다.
+      # `|| true`는 분석 결과(순환 참조 등)가 stderr에 출력되어도 CI를 중지하지 않도록 합니다.
+      # TESTS_TO_RUN 변수는 Main.java의 System.out.println()으로 출력된 테스트 목록만 포함하게 됩니다.
+      # ANALYSIS_LOG에 stdout이 섞이는 것을 방지하기 위해, 로그에서 테스트 목록을 제외합니다.
       - name: 4. Run QuantumLeap Analyzer
         id: analyze
         run: |
-          TESTS_TO_RUN=$(java -jar quantumleap.jar . \
+          exec 3>&1
+          ANALYSIS_LOG=$( { java -jar quantumleap.jar . \
             --base ${{ github.event.before }} \
-            --head ${{ github.event.after }})
+            --head ${{ github.event.after }} 1>&3 2>&1; } | tee /dev/stderr ) || true
+          exec 3>&-
 
-          # 결과를 다음 단계에서 사용할 수 있도록 GitHub Actions 출력 변수로 설정
-          echo "tests_to_run<<EOF" >> "$GITHUB_OUTPUT"
+          TESTS_TO_RUN=$(echo "${ANALYSIS_LOG}" | grep -v "🚀" | grep -v "ℹ️" | grep -v "✅" | grep -v "⚠️" | grep -v "===" | grep -v "분석")
+          ANALYSIS_LOG_CLEAN=$(echo "${ANALYSIS_LOG}" | grep -E "🚀|ℹ️|✅|⚠️|===|분석")
+
+          # 여러 줄의 테스트 목록을 Gradle --tests 옵션 형식의 한 줄 문자열로 변환합니다.
+          TESTS_STRING=$(echo "$TESTS_TO_RUN" | awk '{printf "--tests \\"%s\\" ", $0}' | sed 's/ $//')
+
+          echo "tests_string=$TESTS_STRING" >> "$GITHUB_OUTPUT"
+          echo "tests_list_md<<EOF" >> "$GITHUB_OUTPUT"
           echo "$TESTS_TO_RUN" >> "$GITHUB_OUTPUT"
           echo "EOF" >> "$GITHUB_OUTPUT"
+          echo "analysis_log_md<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$ANALYSIS_LOG_CLEAN" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
 
-      - name: 5. Display Selected Tests (For Verification)
+      # 테스트 실행
+      - name: 5. Run Selected Tests
+        id: test # 이 단계에 ID를 부여하여 결과를 추적합니다.
+        if: steps.analyze.outputs.tests_string != ''
         run: |
-          echo "QuantumLeap가 선별한 테스트 목록:"
-          echo "${{ steps.analyze.outputs.tests_to_run }}"
-          # TODO: 10주차에 실제 테스트 실행 로직으로 변경 예정
+          echo "선별된 테스트를 실행합니다: ${{ steps.analyze.outputs.tests_string }}"
+          chmod +x ./gradlew
+          ./gradlew test ${{ steps.analyze.outputs.tests_string }}
 
-      # --- 10주차 작업 예정 ---
-      # - name: 5. Run Selected Tests
-      #   if: steps.analyze.outputs.tests_string != ''
-      #   run: ./gradlew test ${{ steps.analyze.outputs.tests_string }}
-      # - name: 6. Run All Tests (Fallback)
-      #   if: steps.analyze.outputs.tests_string == ''
-      #   run: ./gradlew test
+      - name: 6. Run All Tests (Fallback)
+        id: test-all # 이 단계에도 ID를 부여합니다.
+        if: steps.analyze.outputs.tests_string == ''
+        run: |
+          echo "선별된 테스트가 없어 전체 테스트를 실행합니다."
+          chmod +x ./gradlew
+          ./gradlew test
+
+      # 빌드 리포트 생성 및 PR 코멘트 게시
+      - name: 7. Post Build Report Comment
+        if: always() # 빌드 성공/실패 여부에 관계없이 항상 실행
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          # PR에 코멘트를 달기 위한 GitHub 토큰
+          token: ${{ secrets.GITHUB_TOKEN }}
+          # 코멘트를 달 이슈(PR) 번호
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ### 🚀CI 분석 리포트
+
+            **${{ github.event.pull_request.head.ref }}** 브랜치의 빌드를 완료했습니다.
+
+            ---
+
+            #### 📊 빌드 요약
+            | 항목 | 결과 |
+            | :--- | :--- |
+            | **빌드 상태** | ${{ job.status == 'success' && '✅ 성공' || '❌ 실패' }} |
+            | **선별된 테스트** | `${{ steps.analyze.outputs.tests_string == '' && '전체 테스트 실행' || '선별된 테스트 실행' }}` |
+
+            ---
+
+            #### 아키텍처 건전성 분석
+            ```
+            ${{ steps.analyze.outputs.analysis_log_md || '분석 결과 없음' }}
+            ```
+
+            ---
+
+            #### 🎯 실행된 테스트 목록
+            ```
+            ${{ steps.analyze.outputs.tests_list_md || '실행된 테스트 없음' }}
+            ${{ job.status == 'failure' && '---' || '' }}
+            ${{ job.status == 'failure' && '🚨 **빌드가 실패했습니다:** `Run Selected Tests` 또는 `Run All Tests (Fallback)` 단계의 로그를 확인하여 실패한 테스트를 수정하세요.' || '' }}
