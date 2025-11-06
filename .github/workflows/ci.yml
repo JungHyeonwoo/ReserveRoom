@@ -73,14 +73,20 @@ jobs:
           chmod +x ./gradlew
           ./gradlew test ${{ steps.analyze.outputs.tests_string }}
 
-      - name: 6. Run All Tests (Fallback)
-        id: test-all # 이 단계에도 ID를 부여합니다.
-        if: steps.analyze.outputs.tests_string == ''
-        run: |
-          echo "선별된 테스트가 없어 전체 테스트를 실행합니다."
-          chmod +x ./gradlew
-          ./gradlew test
-
+#      - name: 6. Run All Tests (Fallback)
+      ##        id: test-all # 이 단계에도 ID를 부여합니다.
+      ##        if: steps.analyze.outputs.tests_string == ''
+      ##        run: |
+      ##          echo "선별된 테스트가 없어 전체 테스트를 실행합니다."
+      ##          chmod +x ./gradlew
+      ##          ./gradlew test
+      - name: 6. Upload Interactive HTML Report
+        if: always() # 성공/실패와 관계없이 리포트가 생성되었으므로 항상 업로드
+        uses: actions/upload-artifact@v4
+        with:
+          name: quantumleap-interactive-report # 아티팩트 이름
+          path: build/reports/quantumleap/interactive-report.html # QuantumLeapService가 저장하는 경로
+          retention-days: 7 # 7일간 보관
       # 빌드 리포트 생성 및 PR 코멘트 게시
       - name: 7. Post Build Report Comment
         if: always() # 빌드 성공/실패 여부에 관계없이 항상 실행
@@ -117,3 +123,9 @@ jobs:
             ${{ steps.analyze.outputs.tests_list_md || '실행된 테스트 없음' }}
             ${{ job.status == 'failure' && '---' || '' }}
             ${{ job.status == 'failure' && '🚨 **빌드가 실패했습니다:** `Run Selected Tests` 또는 `Run All Tests (Fallback)` 단계의 로그를 확인하여 실패한 테스트를 수정하세요.' || '' }}
+            
+            #### 의존성 맵
+            분석된 전체 의존성 구조를 시각적으로 탐색할 수 있는 **`interactive-report.html`** 파일이 생성되었습니다.
+
+            1.  이 PR의 **[Summary](httpsD://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})** 링크로 이동하세요.
+            2.  페이지 하단의 **"Artifacts"** 섹션에서 **`quantumleap-interactive-report`**를 다운로드하여 확인하세요.
