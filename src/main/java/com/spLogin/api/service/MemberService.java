@@ -129,7 +129,7 @@ public class MemberService {
   }
 
   public static boolean verifyPassword(String userPassword) {
-    String passwordPolicy = "((?=.*[a-z])(?=.*[0-9])(?=.*[^a-zA-Z0-9]).{8,})";
+    String passwordPolicy = "^((?=.*[a-z])(?=.*[0-9])(?=.*[^a-zA-Z0-9]).{8,})";
     Pattern pattern = Pattern.compile(passwordPolicy);
     Matcher matcher= pattern.matcher(userPassword);
 
