@@ -127,5 +127,5 @@ jobs:
             #### 의존성 맵
             분석된 전체 의존성 구조를 시각적으로 탐색할 수 있는 **`interactive-report.html`** 파일이 생성되었습니다.
             ```
-            1.  이 PR의 [Summary](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) 링크로 이동하세요.
-            2.  페이지 하단의 "Artifacts"** 섹션에서 **`quantumleap-interactive-report`**를 다운로드하여 확인하세요.
+            1.  이 PR의 [Summary](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})  링크로 이동하세요.
+            2.  페이지 하단의 "Artifacts" 섹션에서 'quantumleap-interactive-report'를 다운로드하여 확인하세요.
