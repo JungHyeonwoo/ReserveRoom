@@ -54,7 +54,7 @@ jobs:
           rm "$STDOUT_FILE" "$STDERR_FILE"
 
           # 여러 줄의 테스트 목록을 Gradle --tests 옵션 형식의 한 줄 문자열로 변환합니다.
-          TESTS_STRING=$(echo "$TESTS_TO_RUN" | awk '{printf "--tests \\"%s\\" ", $0}' | sed 's/ $//')
+          TESTS_STRING=$(echo "$TESTS_TO_RUN" | grep -v '^[[:space:]]*$' | sed 's/^/--tests /' | xargs)
 
           echo "tests_string=$TESTS_STRING" >> "$GITHUB_OUTPUT"
           echo "tests_list_md<<EOF" >> "$GITHUB_OUTPUT"
