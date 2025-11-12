@@ -109,6 +109,7 @@ public class MemberService {
     user.changePassword(passwordEncoder.encode(updatePasswordDTO.getPassword()));
   }
 
+  // getTokenDTO
   private TokenDTO getTokenDTO(Authentication authentication) {
     TokenDTO tokenDTO = jwtTokenProvider.generateTokenDTO(authentication);
 
