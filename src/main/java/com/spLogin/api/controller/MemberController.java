@@ -27,7 +27,7 @@ public class MemberController {
     return userService.register(registerRequest);
   }
 
-  // 로그인 API11
+  // 로그인 API
   @PostMapping("/login")
   public TokenDTO login(@RequestBody @Valid LoginRequest loginRequest) {
     return userService.login(loginRequest);
