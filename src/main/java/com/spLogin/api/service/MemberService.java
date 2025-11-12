@@ -67,6 +67,7 @@ public class MemberService {
     return userToUserResponse(newUser);
   }
 
+  // login
   @Transactional(readOnly = true)
   public TokenDTO login(LoginRequest loginRequest) {
 

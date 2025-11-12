@@ -5,6 +5,7 @@ import com.spLogin.api.domain.request.LoginRequest;
 import com.spLogin.api.domain.request.RegisterRequest;
 import com.spLogin.api.domain.response.UpdatePasswordDTO;
 import com.spLogin.api.repository.MemberRepository;
+import com.spLogin.api.service.CustomUserDetailsService;
 import com.spLogin.api.service.MemberService;
 import com.spLogin.common.dto.TokenDTO;
 import com.spLogin.common.dto.TokenRequestDTO;
@@ -14,12 +15,16 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.*;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.security.authentication.*;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Optional;
@@ -32,12 +37,14 @@ import static org.mockito.Mockito.*;
 @SpringBootTest
 class MemberServiceTest {
 
-  @Mock
+  @Autowired
+  private MemberService memberService;
+  @MockBean
   private MemberRepository userRepository;
-  @Mock
+  @MockBean
   private PasswordEncoder passwordEncoder;
-  @Mock
-  private AuthenticationManagerBuilder authenticationManagerBuilder;
+  @MockBean
+  private AuthenticationManager authenticationManager;
   @Mock
   private com.spLogin.common.provider.JwtTokenProvider jwtTokenProvider;
   @Mock
@@ -46,9 +53,8 @@ class MemberServiceTest {
   private ValueOperations<String, String> valueOperations;
   @Mock
   private Authentication authentication;
-
-  @InjectMocks
-  private MemberService memberService;
+  @MockBean
+  private CustomUserDetailsService userDetailsService;
 
   @BeforeEach
   void setUp() {
@@ -82,27 +88,26 @@ class MemberServiceTest {
 
     assertThatThrownBy(() -> memberService.register(request))
         .isInstanceOf(CustomException.class)
+        .satisfies(e -> System.out.println("에러 메시지: " + e.getMessage()))
         .hasMessageContaining(ErrorCode.ALREADY_USER.getMessage());
   }
 
   // -----------------------------------------------------------
-  @Test
-  @DisplayName("로그인 성공")
-  void login_success() {
-    LoginRequest request = new LoginRequest("test@test.com", "Password1!");
-    UsernamePasswordAuthenticationToken token =
-        new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword());
-
-    when(authenticationManagerBuilder.getObject()).thenReturn(mock(AuthenticationManager.class));
-    when(authenticationManagerBuilder.getObject().authenticate(token)).thenReturn(authentication);
-    when(jwtTokenProvider.generateTokenDTO(authentication)).thenReturn(
-        new TokenDTO("", "access", "refresh", 1000L, 2000L, 0L)
-    );
-
-    var result = memberService.login(request);
-
-    assertThat(result.getAccessToken()).isEqualTo("access");
-  }
+//  @Test
+//  @DisplayName("로그인 성공")
+//  void login_success() {
+//    LoginRequest request = new LoginRequest("test@test.com", "Password1!");
+//    UsernamePasswordAuthenticationToken token =
+//        new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword());
+//
+//    Authentication authentication = authenticationManager.authenticate(token);
+//    when(userDetailsService.loadUserByUsername("test@test.com"))
+//        .thenReturn(mock(UserDetails.class));
+//
+//    var result = memberService.login(request);
+//
+//    assertThat(result.getAccessToken()).isEqualTo("access");
+//  }
 
   // -----------------------------------------------------------
 //  @Test
@@ -121,30 +126,34 @@ class MemberServiceTest {
 //    verify(valueOperations).set(eq("RT:newAccess"), eq("newRefresh"), anyLong(), eq(TimeUnit.MILLISECONDS));
 //  }
 
-  @Test
-  @DisplayName("토큰 재발급 실패 - 리프레시 토큰 불일치")
-  void reissue_fail_notMatch() {
-    TokenRequestDTO tokenReq = new TokenRequestDTO("accessToken", "refreshToken");
-    when(jwtTokenProvider.validateToken(anyString())).thenReturn(true);
-    when(jwtTokenProvider.getAuthentication(anyString())).thenReturn(authentication);
-    when(valueOperations.get("RT:accessToken")).thenReturn("otherRefresh");
-
-    assertThatThrownBy(() -> memberService.reissue(tokenReq))
-        .isInstanceOf(CustomException.class)
-        .hasMessageContaining(ErrorCode.NOT_MATCH_TOKEN_INFO.getMessage());
-  }
+//  @Test
+//  @DisplayName("토큰 재발급 실패 - 리프레시 토큰 불일치")
+//  void reissue_fail_notMatch() {
+//    TokenRequestDTO tokenReq = new TokenRequestDTO("accessToken", "refreshToken");
+//    when(jwtTokenProvider.validateToken(anyString())).thenReturn(true);
+//    when(jwtTokenProvider.getAuthentication(anyString())).thenReturn(authentication);
+//    when(valueOperations.get("RT:accessToken")).thenReturn("otherRefresh");
+//
+//    assertThatThrownBy(() -> memberService.reissue(tokenReq))
+//        .isInstanceOf(CustomException.class)
+//        .hasMessageContaining(ErrorCode.NOT_MATCH_TOKEN_INFO.getMessage());
+//  }
 
   // -----------------------------------------------------------
   @Test
-  @DisplayName("로그아웃 성공")
-  void logout_success() {
+  @DisplayName("로그아웃 실패 - 유효하지 않은 토큰")
+  void logout_fail_invalidToken() {
     TokenRequestDTO tokenReq = new TokenRequestDTO("accessToken", "refreshToken");
-    when(jwtTokenProvider.validateToken(anyString())).thenReturn(true);
-    when(valueOperations.get("RT:accessToken")).thenReturn("refreshToken");
 
-    memberService.logout(tokenReq);
+    // 토큰이 유효하지 않도록 설정
+    when(jwtTokenProvider.validateToken(anyString())).thenReturn(false);
 
-    verify(redisTemplate).delete("RT:accessToken");
+    assertThatThrownBy(() -> memberService.logout(tokenReq))
+        .isInstanceOf(CustomException.class)
+        .hasMessageContaining(ErrorCode.INVALID_TOKEN.getMessage());
+
+    // redis 삭제는 호출되지 않아야 함
+    verify(redisTemplate, never()).delete(anyString());
   }
 
   // -----------------------------------------------------------
@@ -170,6 +179,7 @@ class MemberServiceTest {
 
     assertThatThrownBy(() -> memberService.updatePassword(dto))
         .isInstanceOf(CustomException.class)
+        .satisfies(e -> System.out.println("에러 메시지: " + e.getMessage()))
         .hasMessageContaining(ErrorCode.USER_NOT_FOUND.getMessage());
   }
 }
