@@ -35,12 +35,14 @@ public class MemberService {
   @Autowired
   PasswordEncoder passwordEncoder;
 
+  // REGEX
   private static final String EMAIL_REGEX =
       "^[a-zA-Z0-9_+&*-]+(?:\\." +
           "[a-zA-Z0-9_+&*-]+)*@" +
           "(?:[a-zA-Z0-9-]+\\.)+[a-z" +
           "A-Z]{2,7}$";
 
+  // 회원가입
   public UserResponse register(RegisterRequest registerRequest) {
     userRepository.findUserByEmail(registerRequest.getEmail())
         .ifPresent(user -> {
@@ -65,6 +67,7 @@ public class MemberService {
     return userToUserResponse(newUser);
   }
 
+  // login
   @Transactional(readOnly = true)
   public TokenDTO login(LoginRequest loginRequest) {
 
@@ -109,6 +112,7 @@ public class MemberService {
     user.changePassword(passwordEncoder.encode(updatePasswordDTO.getPassword()));
   }
 
+  // getTokenDTO
   private TokenDTO getTokenDTO(Authentication authentication) {
     TokenDTO tokenDTO = jwtTokenProvider.generateTokenDTO(authentication);
 
@@ -129,7 +133,7 @@ public class MemberService {
   }
 
   public static boolean verifyPassword(String userPassword) {
-    String passwordPolicy = "((?=.*[a-z])(?=.*[0-9])(?=.*[^a-zA-Z0-9]).{8,})";
+    String passwordPolicy = "^((?=.*[a-z])(?=.*[0-9])(?=.*[^a-zA-Z0-9]).{8,})";
     Pattern pattern = Pattern.compile(passwordPolicy);
     Matcher matcher= pattern.matcher(userPassword);
 

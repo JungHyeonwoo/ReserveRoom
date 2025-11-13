@@ -21,11 +21,13 @@ public class MemberController {
 
   private final MemberService userService;
 
+  // 회원가입 API /v1/user/sing/up
   @PostMapping("/sing/up")
   public UserResponse singUp(@RequestBody @Valid RegisterRequest registerRequest) {
     return userService.register(registerRequest);
   }
 
+  // 로그인 API /v1/user/login
   @PostMapping("/login")
   public TokenDTO login(@RequestBody @Valid LoginRequest loginRequest) {
     return userService.login(loginRequest);
