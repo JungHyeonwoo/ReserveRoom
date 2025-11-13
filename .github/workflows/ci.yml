@@ -115,7 +115,7 @@ jobs:
             | :--- | :--- |
             | **빌드 상태** | ${{ job.status == 'success' && '✅ 성공' || '❌ 실패' }} |
             | **테스트 실행 시간** | `${{ steps.test.outputs.duration || 'N/A' }}초` |
-            | **선별된 테스트** | `${{ steps.analyze.outputs.tests_string == '' && '코드 변경에 따른 실행될 테스트가 없음.' || '선별된 테스트 실행' }}` |
+            | **선별된 테스트** | ${{ startsWith(steps.analyze.outputs.tests_string || '', '--tests') && '선별된 테스트 실행' || '코드 변경에 따른 실행될 테스트가 없음.' }} |
 
             ---
 
