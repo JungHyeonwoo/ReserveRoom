@@ -23,7 +23,7 @@ jobs:
         with:
           fetch-depth: 0 # Git 변경점 분석 위한 전체 히스토리 로드
 
-      # 개발 환경 설정
+      # 개발 환경 설정(프로젝트 빌드에 필요한 JDK 설정)
       - name: 2. Set up JDK 17
         uses: actions/setup-java@v4
         with:
@@ -31,7 +31,7 @@ jobs:
           distribution: 'temurin'
           cache: 'gradle'
 
-      # 분석기 jar 파일 다운로드
+      # 분석기 jar 파일 다운로드 (Github Releases 활용)
       - name: 3. Download QuantumLeap Analyzer
         run: |
           wget https://github.com/JungHyeonwoo/PBL/releases/download/V1.0.2/QuantumLeap-1.0.2.jar -O quantumleap.jar
@@ -47,7 +47,7 @@ jobs:
             --base ${{ github.event.before }} \
             --head ${{ github.event.after }} \
             > "$STDOUT_FILE" 2> >(tee "$STDERR_FILE" >&2) || true
-          
+          # 실행될 테스트         
           TESTS_TO_RUN=$(cat "$STDOUT_FILE")
           ANALYSIS_LOG_CLEAN=$(cat "$STDERR_FILE")
           
@@ -66,14 +66,21 @@ jobs:
 
       # 테스트 실행
       - name: 5. Run Selected Tests
-        id: test # 이 단계에 ID를 부여하여 결과를 추적합니다.
+        id: test
         if: steps.analyze.outputs.tests_string != ''
         run: |
           echo "선별된 테스트를 실행합니다: ${{ steps.analyze.outputs.tests_string }}"
           chmod +x ./gradlew
+          
+          START_TIME=$(date +%s)
           ./gradlew test ${{ steps.analyze.outputs.tests_string }}
+          END_TIME=$(date +%s)
 
-#      - name: 6. Run All Tests (Fallback)
+          DURATION=$((END_TIME - START_TIME))
+          echo "테스트 실행 시간: ${DURATION}초"
+          echo "duration=${DURATION}" >> "$GITHUB_OUTPUT"
+      ## 전체 테스트 실행 - 프로그램을 통한 분석으로 개선된 결과를 비교하기 위함.
+      #      - name: 6. Run All Tests (Fallback) // 전체 테스트 실행 시간
       ##        id: test-all # 이 단계에도 ID를 부여합니다.
       ##        if: steps.analyze.outputs.tests_string == ''
       ##        run: |
@@ -107,7 +114,8 @@ jobs:
             | 항목 | 결과 |
             | :--- | :--- |
             | **빌드 상태** | ${{ job.status == 'success' && '✅ 성공' || '❌ 실패' }} |
-            | **선별된 테스트** | `${{ steps.analyze.outputs.tests_string == '' && '전체 테스트 실행' || '선별된 테스트 실행' }}` |
+            | **테스트 실행 시간** | `${{ steps.test.outputs.duration || 'N/A' }}초` |
+            | **선별된 테스트** | `${{ steps.analyze.outputs.tests_string == '' && '코드 변경에 따른 실행될 테스트가 없음.' || '선별된 테스트 실행' }}` |
 
             ---
 
@@ -122,10 +130,10 @@ jobs:
             ```
             ${{ steps.analyze.outputs.tests_list_md || '실행된 테스트 없음' }}
             ${{ job.status == 'failure' && '---' || '' }}
-            ${{ job.status == 'failure' && '🚨 **빌드가 실패했습니다:** `Run Selected Tests` 또는 `Run All Tests (Fallback)` 단계의 로그를 확인하여 실패한 테스트를 수정하세요.' || '' }}
+            ${{ job.status == 'failure' && '🚨 **빌드가 실패했습니다:** `Run Selected Tests` 단계의 로그를 확인하여 실패한 테스트를 수정하세요.' || '' }}
             
             #### 의존성 맵
-            분석된 전체 의존성 구조를 시각적으로 탐색할 수 있는 **`interactive-report.html`** 파일이 생성되었습니다.
+            분석된 전체 의존성 구조를 시각적으로 탐색할 수 있는 `interactive-report.html` 파일이 생성되었습니다.
             ```
             1.  이 PR의 [Summary](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})  링크로 이동하세요.
             2.  페이지 하단의 "Artifacts" 섹션에서 'quantumleap-interactive-report'를 다운로드하여 확인하세요.
